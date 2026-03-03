@@ -199,4 +199,5 @@ Không được chứa free-text ngoài JSON — yêu cầu này dựa trên ngu
 
 ---
 
-> Nguồn tham khảo của chương này được quản lý tập trung tại file `docs/REFERENCES`.
+
+

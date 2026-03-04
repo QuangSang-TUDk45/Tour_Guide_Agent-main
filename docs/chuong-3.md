@@ -277,3 +277,271 @@ Ràng buộc này đảm bảo tính chính xác của thông tin và duy trì t
 ---
 
 > Nguồn tham khảo của chương này được quản lý tập trung tại file `docs/REFERENCES`.
+
+
+## 3.2 Thiết kế kiến trúc tổng thể
+
+### 3.2.0 Mục tiêu mục 3.2
+
+Mục này trình bày kiến trúc tổng thể của hệ thống Trợ lý Du lịch Ảo Quy Nhơn – Bình Định, bao gồm:
+
+* Mô hình phân tầng 3 lớp (3-tier architecture).
+* Luồng xử lý dữ liệu end-to-end.
+* Thiết kế pipeline tách biệt giữa truy xuất và sinh văn bản.
+* Cấu trúc tổ chức mã nguồn phục vụ khả năng mở rộng.
+
+Thiết kế được xây dựng theo nguyên lý **Separation of Concerns (SoC)** và kiến trúc N-tier nhằm đảm bảo tính độc lập, khả năng mở rộng và tính kiểm chứng của hệ thống [18].
+
+---
+
+## 3.2.1 Sơ đồ tổng thể 3 tầng: Presentation / Application / Data
+
+Hệ thống được tổ chức theo kiến trúc 3 tầng logic, giao tiếp thông qua HTTP RESTful API, phù hợp với mô hình kiến trúc Web hiện đại [18].
+
+![Hình 3.2 - Kiến trúc tổng thể 3 tầng của hệ thống](images/hinh_3_2_kien_truc_tong_the.svg)
+
+### (1) Presentation Layer
+
+Tầng trình diễn được xây dựng bằng framework **Streamlit** (`app.py`).
+
+Chức năng chính:
+
+* Hiển thị giao diện hội thoại dạng chat UI.
+* Quản lý trạng thái phiên (`st.session_state`) để lưu lịch sử hội thoại.
+* Gửi yêu cầu đến backend thông qua HTTP POST request.
+
+Frontend đóng vai trò Web Client, hoàn toàn không chứa logic xử lý nghiệp vụ, bảo đảm nguyên tắc tách biệt giao diện và xử lý (UI–Logic decoupling).
+
+---
+
+### (2) Application Layer
+
+Tầng ứng dụng là lõi xử lý của hệ thống, triển khai trên **FastAPI** (`main.py`) và vận hành qua ASGI server `uvicorn`.
+
+Tầng này bao gồm ba thành phần:
+
+#### (a) Backend API
+
+* Định nghĩa endpoint `/api/chat`.
+* Điều phối pipeline xử lý truy vấn.
+* Quản lý exception handling và timeout (≤ 60 giây).
+
+FastAPI được lựa chọn do hỗ trợ asynchronous processing và hiệu năng cao trong môi trường I/O-bound.
+
+---
+
+#### (b) Agent Layer
+
+Bao gồm ba tác nhân chuyên biệt:
+
+* **Orchestrator Agent** – phân loại ý định và sinh JSON cấu trúc.
+* **Response Agent** – sinh phản hồi hội thoại đơn miền.
+* **Planning Agent** – sinh lịch trình đa ngày có cấu trúc.
+
+Mô hình sử dụng: `Qwen/Qwen2.5-7B-Instruct` thông qua HuggingFace Router.
+
+Kiến trúc này tuân theo mô hình **Multi-Agent Orchestration Pattern**, trong đó mỗi tác tử đảm nhiệm một vai trò duy nhất, giúp giảm nhiễu ngữ cảnh và tăng độ chính xác định tuyến [19].
+
+---
+
+#### (c) Tool Layer
+
+Tầng công cụ thực thi các thao tác truy xuất dữ liệu thực tế:
+
+* Truy vấn PostgreSQL thông qua SQLAlchemy.
+* Tính toán độ tương đồng chuỗi bằng `difflib.SequenceMatcher`.
+* Gọi API thời tiết Open-Meteo.
+
+Tool Layer đóng vai trò trung gian giữa LLM và nguồn dữ liệu, hiện thực hóa mô hình Retrieval-Augmented Generation (RAG) [20].
+
+---
+
+### (3) Data Layer
+
+Tầng dữ liệu bao gồm:
+
+* Cơ sở dữ liệu quan hệ PostgreSQL (`BinhDinh_TourGuide`).
+* 5 bảng chính: `food`, `restaurant`, `destination`, `hotel`, `service`.
+* API ngoại vi: Open-Meteo (dữ liệu thời gian thực).
+
+Thiết kế quan hệ giúp đảm bảo toàn vẹn dữ liệu (referential integrity) và hỗ trợ truy vấn có điều kiện.
+
+---
+
+## 3.2.2 Luồng dữ liệu: Streamlit → FastAPI → Orchestrator → Tools → Agent
+
+Luồng xử lý dữ liệu được thiết kế tuyến tính và khép kín nhằm bảo đảm tính xác định (deterministic flow).
+
+### Bước 1 – Nhập liệu
+
+Người dùng nhập câu hỏi vào Streamlit.
+Frontend đóng gói payload dạng:
+
+```json
+{"user_prompt": "..."}
+```
+
+và gửi đến endpoint `/api/chat`.
+
+---
+
+### Bước 2 – Định tuyến (Orchestrator)
+
+FastAPI chuyển truy vấn đến Orchestrator Agent.
+
+Orchestrator:
+
+* Phân tích ngữ nghĩa.
+* Ánh xạ về đúng 1 trong 8 intents.
+* Trả về JSON hợp lệ với duy nhất một khóa.
+
+Kết quả được xác thực bởi Pydantic Schema.
+Nếu sai cấu trúc → hệ thống kích hoạt retry loop.
+
+Thiết kế này bảo đảm structured output reliability như được đề xuất trong các nghiên cứu về LLM orchestration [19].
+
+---
+
+### Bước 3 – Trích xuất dữ liệu (Tools Invocation)
+
+Dựa trên intent key, FastAPI gọi tool tương ứng:
+
+* `get_food_list()`
+* `get_hotel()`
+* `get_weather()`
+* …
+
+Các tool truy vấn CSDL hoặc gọi API bên ngoài.
+
+---
+
+### Bước 4 – Context Injection
+
+Dữ liệu truy xuất được chuyển thành chuỗi văn bản (context string).
+Context này được nối với câu hỏi gốc.
+
+Đây là bước đặc trưng của kiến trúc RAG, tách biệt rõ ràng giữa truy xuất và sinh văn bản [20].
+
+---
+
+### Bước 5 – Sinh phản hồi
+
+Hệ thống kiểm tra `planning_flag`:
+
+* Nếu `False` → gọi Response Agent.
+* Nếu `True` → gọi Planning Agent.
+
+LLM sinh câu trả lời cuối cùng dựa hoàn toàn trên context được cung cấp.
+
+---
+
+### Bước 6 – Trả kết quả
+
+FastAPI trả JSON response về Streamlit để hiển thị cho người dùng.
+
+Toàn bộ chu trình được bao bọc trong cơ chế try–except để đảm bảo graceful degradation.
+
+---
+
+## 3.2.3 Thiết kế pipeline `get_context()` và `get_response()`
+
+Để tránh thiết kế monolithic, pipeline backend được tách thành hai giai đoạn độc lập.
+
+---
+
+### (1) Giai đoạn 1 – `get_context(user_prompt)`
+
+Chức năng:
+
+* Gọi `get_routing_from_orchestrator()`.
+* Phân nhánh theo intent.
+* Gọi tool tương ứng.
+* Trả về:
+
+  * `context` (chuỗi thông tin thực tế)
+  * `planning_flag` (boolean)
+
+Đối với intent `planning`, hàm này:
+
+* Gán giá trị mặc định nếu thiếu tham số.
+* Gọi đồng thời 4 tools.
+* Tổng hợp context lớn phục vụ lập lịch trình.
+
+Thiết kế này phù hợp với kiến trúc RAG hai giai đoạn được mô tả trong [20].
+
+---
+
+### (2) Giai đoạn 2 – `get_response(user_prompt, context, planning_flag)`
+
+Chức năng:
+
+* Nhận context đã tổng hợp.
+* Quyết định agent được gọi.
+* Sinh phản hồi cuối cùng.
+
+Việc tách biệt hai hàm giúp:
+
+* Giảm độ phức tạp hàm.
+* Tăng khả năng kiểm thử đơn vị (unit testing).
+* Tối ưu token context window cho từng loại tác vụ.
+
+---
+
+## 3.2.4 Cấu trúc thư mục dự án
+
+Mã nguồn được tổ chức theo cấu trúc phân hệ chức năng:
+
+```
+tour-guide-agent/
+│
+├── agents/
+│   ├── Orchestrator_Agent.py
+│   ├── Response_Agent.py
+│   └── Planning_Agent.py
+│
+├── tools/
+│   ├── get_food.py
+│   ├── get_restaurant.py
+│   ├── get_destination.py
+│   ├── get_hotel.py
+│   ├── get_service.py
+│   └── weather_tool.py
+│
+├── prompts/
+│   ├── orchestrator_agent.txt
+│   ├── planning_agent.txt
+│   └── response_agent.txt
+│
+├── script_init_database/
+│   ├── create_database.py
+│   └── convert_excel_to_postgre.py
+│
+├── main.py
+├── app.py
+└── requirements.txt
+```
+
+Việc tách thư mục `prompts/` khỏi mã nguồn giúp hỗ trợ hot-swapping prompt mà không làm thay đổi logic lõi.
+
+Cấu trúc này bảo đảm:
+
+* Tính module hóa cao.
+* Dễ bổ sung intent mới.
+* Không phá vỡ kiến trúc hiện tại (Open–Closed Principle).
+
+---
+
+## 3.2.5 Tóm tắt mục 3.2
+
+Mục 3.2 đã:
+
+* Trình bày kiến trúc 3 tầng của hệ thống.
+* Phân tích luồng dữ liệu từ frontend đến LLM.
+* Giải thích pipeline hai giai đoạn theo mô hình RAG.
+* Mô tả cấu trúc tổ chức mã nguồn hỗ trợ mở rộng.
+
+Kiến trúc đề xuất đảm bảo tính xác định trong định tuyến, giảm thiểu hallucination và hỗ trợ triển khai thực tế trong môi trường dữ liệu địa phương.
+
+---
+
+> Nguồn tham khảo của mục này được quản lý tập trung tại file `docs/REFERENCES`.

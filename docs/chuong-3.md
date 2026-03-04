@@ -276,12 +276,8 @@ Ràng buộc này đảm bảo tính chính xác của thông tin và duy trì t
 
 ---
 
-> Nguồn tham khảo của chương này được quản lý tập trung tại file `docs/REFERENCES`.
-
 
 ## 3.2 Thiết kế kiến trúc tổng thể
-
-### 3.2.0 Mục tiêu mục 3.2
 
 Mục này trình bày kiến trúc tổng thể của hệ thống Trợ lý Du lịch Ảo Quy Nhơn – Bình Định, bao gồm:
 
@@ -528,19 +524,6 @@ Cấu trúc này bảo đảm:
 * Tính module hóa cao.
 * Dễ bổ sung intent mới.
 * Không phá vỡ kiến trúc hiện tại (Open–Closed Principle).
-
----
-
-## 3.2.5 Tóm tắt mục 3.2
-
-Mục 3.2 đã:
-
-* Trình bày kiến trúc 3 tầng của hệ thống.
-* Phân tích luồng dữ liệu từ frontend đến LLM.
-* Giải thích pipeline hai giai đoạn theo mô hình RAG.
-* Mô tả cấu trúc tổ chức mã nguồn hỗ trợ mở rộng.
-
-Kiến trúc đề xuất đảm bảo tính xác định trong định tuyến, giảm thiểu hallucination và hỗ trợ triển khai thực tế trong môi trường dữ liệu địa phương.
 
 ---
 

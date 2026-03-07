@@ -96,5 +96,5 @@ Thư mục `docs/` hiện đã có:
 - Bộ khung đầy đủ cho phần đầu báo cáo.
 - Master TOC chi tiết theo cấu trúc 5 chương.
 - File nguồn tham khảo (`REFERENCES`).
-- Placeholder cho các chương và phụ lục để triển khai nội dung chi tiết ở các phiên tiếp theo.
+- Chương 1, Chương 2, Chương 3 và Chương 5 đã có nội dung chi tiết; Chương 4 và phụ lục tiếp tục được cập nhật theo tiến độ kiểm thử/thực nghiệm.
 

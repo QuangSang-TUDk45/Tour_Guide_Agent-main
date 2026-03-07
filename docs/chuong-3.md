@@ -968,40 +968,65 @@ Mô hình quan hệ phù hợp với dữ liệu cấu trúc và yêu cầu truy
 
 ## 3.8 Vấn đề dữ liệu địa chỉ hành chính sau sáp nhập 2025
 
-### 3.8.1 Bối cảnh triển khai dữ liệu
+### 3.8.1 Bối cảnh pháp lý và tác động đến hệ thống dữ liệu
 
-Tại thời điểm bắt đầu triển khai (22/09/2025), dữ liệu nguồn du lịch địa phương vẫn chủ yếu dùng đơn vị địa chỉ cũ trên bản đồ số và nguồn tổng hợp công cộng.
+Ngày 12/6/2025, Quốc hội đã chính thức thông qua Nghị quyết về việc sắp xếp, sáp nhập 63 tỉnh, thành hiện tại thành 34 đơn vị hành chính cấp tỉnh mới [29]. Từ ngày 01/7/2025, Việt Nam vận hành hệ thống hành chính theo mô hình hai cấp: Tỉnh – Xã, thay thế cho mô hình ba cấp trước đây (Tỉnh – Huyện – Xã) [29]. Đây được xem là một dấu mốc quan trọng trong tiến trình cải cách hành chính, thể hiện quyết tâm tái cấu trúc bộ máy và tổ chức lại không gian phát triển kinh tế – xã hội với tầm nhìn dài hạn.
 
----
-
-### 3.8.2 Rủi ro sai lệch địa chỉ cũ/mới
-
-Sai khác đơn vị hành chính có thể dẫn tới:
-
-* truy vấn không khớp địa danh,
-* hiển thị địa chỉ không đồng nhất giữa các nguồn,
-* giảm độ tin cậy khi người dùng kiểm chứng ngoài hệ thống.
+Việc sắp xếp đơn vị hành chính nhằm tinh gọn bộ máy, nâng cao hiệu quả quản trị, tối ưu hóa đầu tư công, giảm chồng chéo trong phân bổ ngân sách và tăng cường liên kết vùng. Các đơn vị hành chính mới sau sáp nhập có quy mô lớn hơn, tiềm lực mạnh hơn và khả năng thu hút đầu tư cao hơn. Tuy nhiên, bên cạnh các lợi ích vĩ mô, quá trình chuyển đổi này cũng đặt ra những thách thức đáng kể đối với các hệ thống thông tin sử dụng dữ liệu địa chỉ hành chính, đặc biệt là các hệ thống phụ thuộc vào dữ liệu địa phương chi tiết như hệ thống trợ lý du lịch.
 
 ---
 
-### 3.8.3 Quy trình chuẩn hoá thủ công
+### 3.8.2 Hiện trạng dữ liệu địa chỉ tại thời điểm triển khai đề tài
 
-Nhóm triển khai áp dụng quy trình thủ công nhiều bước:
+Đề tài được triển khai từ ngày 23/07/2025, tức sau thời điểm mô hình hành chính hai cấp chính thức có hiệu lực. Tuy nhiên, tại thời điểm thu thập và xây dựng cơ sở dữ liệu, các nguồn dữ liệu công khai phổ biến như Google Maps vẫn hiển thị địa chỉ theo đơn vị hành chính cũ. Cho đến thời điểm hiện tại, nhiều địa điểm du lịch, nhà hàng và khách sạn vẫn chưa được cập nhật theo tên phường/xã mới sau sáp nhập.
 
-1. Đối chiếu điểm trên Google Maps.
-2. Tra cứu văn bản/nguồn pháp lý về sáp nhập đơn vị hành chính.
-3. Cập nhật lại dữ liệu trong bảng đích kèm mốc thời gian.
+Điều này dẫn đến một vấn đề thực tiễn: dữ liệu đầu vào của hệ thống chỉ chứa địa chỉ hành chính cũ, trong khi khung pháp lý đã thay đổi. Nếu không xử lý phù hợp, hệ thống có thể gây nhầm lẫn cho người dùng khi đối chiếu thông tin hành chính theo mô hình mới.
 
 ---
 
-### 3.8.4 Nguyên tắc lưu vết dữ liệu
+### 3.8.3 Quy trình chuẩn hoá địa chỉ bán thủ công
 
-Để hỗ trợ audit về sau, dữ liệu chuẩn hoá được khuyến nghị lưu kèm:
+Để đảm bảo tính chính xác và phù hợp với quy định hiện hành, nhóm nghiên cứu đã thực hiện quy trình chuẩn hóa địa chỉ theo hướng bán thủ công, bao gồm:
 
-* địa chỉ gốc,
-* địa chỉ đã chuẩn hoá,
-* nguồn đối chiếu,
-* thời điểm cập nhật.
+* Tra cứu địa chỉ thực tế của từng địa điểm trên Google Maps để xác định thông tin gốc.
+* Đối chiếu thông tin sáp nhập theo các văn bản pháp lý công khai.
+* Sử dụng công cụ tra cứu sáp nhập tỉnh và đơn vị hành chính tại Cổng thông tin Thư Viện Pháp Luật [30], [31].
+* Cập nhật lại địa chỉ theo đơn vị hành chính mới dựa trên Nghị quyết 1664/NQ-UBTVQH15 năm 2025 và các văn bản liên quan [32].
+
+Theo quy định sau sáp nhập, Thành phố Quy Nhơn (trước đây thuộc tỉnh Bình Định) được tổ chức lại thành 5 phường và 1 xã đảo, bao gồm:
+
+* Phường Quy Nhơn
+* Phường Quy Nhơn Đông
+* Phường Quy Nhơn Tây
+* Phường Quy Nhơn Nam
+* Phường Quy Nhơn Bắc
+* Xã Nhơn Châu
+
+---
+
+### 3.8.4 Nguyên tắc lưu trữ dữ liệu và truy xuất trong giai đoạn chuyển tiếp
+
+Việc thay đổi cấu trúc hành chính buộc hệ thống phải lưu trữ song song hai loại thông tin: địa chỉ gốc (theo đơn vị cũ) và địa chỉ chuẩn hóa (theo đơn vị mới), kèm theo nguồn đối chiếu và thời điểm cập nhật. Cách tiếp cận này giúp đảm bảo tính minh bạch dữ liệu, đồng thời duy trì khả năng truy xuất linh hoạt trong bối cảnh quá trình cập nhật thông tin công khai chưa đồng bộ.
+
+Vấn đề chuẩn hóa địa chỉ hành chính sau sáp nhập là một minh chứng cho thách thức thực tế khi triển khai hệ thống AI theo miền dữ liệu địa phương. Bên cạnh các bài toán kỹ thuật như phân loại intent hay truy xuất dữ liệu, hệ thống còn phải thích ứng với thay đổi thể chế và quy hoạch hành chính ở cấp quốc gia.
+
+---
+
+### 3.8.5 Quy ước cách gọi địa danh trong báo cáo
+
+Về mặt học thuật và hành chính, cách gọi địa danh cần tuân thủ theo thời điểm pháp lý:
+
+* Nếu viết theo bối cảnh lịch sử trước 01/7/2025: “Thành phố Quy Nhơn, tỉnh Bình Định”.
+* Nếu viết theo bối cảnh sau khi mô hình hai cấp có hiệu lực: nên ghi “Thành phố Quy Nhơn (trước sáp nhập thuộc tỉnh Bình Định)” khi cần làm rõ ngữ cảnh chuyển tiếp.
+* Trong tiêu đề đề tài và toàn bộ báo cáo, để đảm bảo tính ổn định và dễ nhận diện địa lý, sử dụng: “Khu vực Quy Nhơn – Bình Định”.
+
+Cách viết “Quy Nhơn – Bình Định” phù hợp về mặt học thuật vì:
+
+* Giữ được tính nhận diện thương hiệu địa phương.
+* Không gây nhầm lẫn trong giai đoạn chuyển tiếp hành chính.
+* Phù hợp với cách gọi địa lý – du lịch hơn là cách gọi thuần hành chính.
+
+Nếu viết theo hướng chuẩn học thuật trung tính, có thể dùng: “Hệ thống trợ lý du lịch ảo cho khu vực Quy Nhơn (Bình Định)”.
 
 ---
 
